@@ -2,33 +2,37 @@
 
 Source: `product-bible-chemical-shop-software.md` V1.1
 
-## 0. Architecture baseline (all phases)
+## 0. Architecture baseline (all phases) — LOCKED STACK
 
-- **Client:** Tauri + React (laptop/tablet) + Capacitor PWA (Android), one codebase. Local DB: SQLite + SQLCipher + WAL.
-- **Server:** Postgres 16 + REST. Auth: JWT + PIN fast-switch.
+- **App:** Next.js 14+ App Router + Tailwind CSS. PWA installable (laptop/tablet/Android). No Supabase.
+- **DB central:** PostgreSQL 16 (direct, Prisma). Local offline: IndexedDB via Dexie + outbox queue + Service Worker background sync. Every op commits locally first, syncs when online.
+- **Auth:** BetterAuth (email+password + PIN fast-switch at till, 5 roles, location lock, idle auto-lock, login throttling).
+- **Files:** Cloudflare R2 (S3-compatible) for item photos, receipt PDFs, CSV imports/exports, DB backups. Signed URLs, per-location prefixes.
+- **Payments:** Paystack for bank transfer / POS verification (initialize → verify webhook, split payment supported). Cash = manual count. No customer credit per PRD.
+- **Email:** Resend for low-stock, expiry 90/30d, negative-stock review, cash-up difference, transfer variance alerts.
 - **Conventions:** `qty_base INTEGER` (ml/g/pc), money kobo `INTEGER`, cost per base `REAL`. All records UUIDv7 client-generated.
-- **Ledger:** insert-only `stock_movements`. One SQLite txn per business op (sale + lines + payments + movements). Sync `POST /sync/push` idempotent `INSERT ON CONFLICT DO NOTHING`; `GET /sync/pull?since=` for master. Master LWW by `version + updated_at`.
+- **Ledger:** insert-only `stock_movements`. One local txn per business op (sale + lines + payments + movements). Sync `POST /api/sync/push` idempotent `INSERT ON CONFLICT DO NOTHING`; `GET /api/sync/pull?since=` for master. Master LWW by `version + updated_at`.
 - **RBAC:** Owner > Manager > Store keeper > Sales > Accountant. Staff: no costs, no adjust. All sensitive actions → `audit_log`.
 
 ## Phase 0 — Foundation (1 week)
 
 **Build:**
-- Auth, 5 roles, location lock, PIN switch, idle lock, login throttling
-- `locations`, `users`, `audit_log` (append-only, deny UPDATE/DELETE)
-- Sync skeleton: push/pull, pending count badge, `device_id`
-- Backup: central daily, local backup per device
+- BetterAuth setup: 5 roles, location lock, PIN switch, idle lock, throttling; `locations`, `users`, `audit_log` (append-only)
+- Sync skeleton: Dexie outbox, push/pull, pending count badge, `device_id`
+- R2 buckets + prefixes (`photos/`, `receipts/`, `exports/`, `backups/`), Resend sender + templates, Paystack test keys + webhook route
+- Backup: central Postgres daily → R2, local IndexedDB export per device
 
-**Exit:** role logins work offline; staff cost-hidden (API strips); audit immutable.
+**Exit:** role logins work offline; staff cost-hidden (API strips); audit immutable; R2/Resend/Paystack sandbox verified.
 
 ## Phase 1 — Core trade (3 weeks)
 
 **Scope:** item master + location pricing, purchasing landed cost, ledger, POS singles, customers-lite, cash-up.
 
 **Build:**
-1. Items/units: types liquid/solid/plastic/service, base units, `factor_to_base`, retail/wholesale per location (`location_id NULL`=global, else override), CSV import
+1. Items/units: types liquid/solid/plastic/service, base units, `factor_to_base`, retail/wholesale per location (`location_id NULL`=global, else override), CSV import via R2 upload, photos → R2
 2. Suppliers + receiving: purchase units → auto convert to base, extras apportioned pro-rata by line value, `landed_cost_per_base = (price+extras)/qty_base` immutable, update `items.current_cost`, `supplier_payments`, derived balance
-3. Ledger: purchase/sale/adjustment/return/wastage, real-time stock = `SUM(qty)`, counts (draft→submitted→approved), low-stock alerts
-4. POS: search/code/scan + quick-pick, sell-by-measure (750g/1.5L), mixed singles+plastics cart, cash/transfer/POS + split, staff discount limit + Manager override, print/PDF (WhatsApp = Phase 4), void + return-singles (Manager, logged)
+3. Ledger: purchase/sale/adjustment/return/wastage, real-time stock = `SUM(qty)`, counts (draft→submitted→approved), low-stock alerts via Resend
+4. POS: search/code/scan + quick-pick, sell-by-measure (750g/1.5L), mixed singles+plastics cart, cash + Paystack-verified transfer/POS + split, staff discount limit + Manager override, print/PDF to R2 (WhatsApp = Phase 4), void + return-singles (Manager, logged)
 5. Customers-lite: optional name/phone, history. No balances.
 6. Cash-up/expenses: `expected = opening + sales_paid - refunds - expenses`, counted vs expected + diff, expenses by category, daily summary by pay type
 
@@ -57,8 +61,8 @@ Source: `product-bible-chemical-shop-software.md` V1.1
 
 **Build:**
 - Transfers: draft→sent→received, sender deducts on dispatch, receiver adds on confirm (same transfer_id + line UUIDs), sent vs received variance → review_queue, in-transit view + timeout
-- Owner consolidated dashboard, location-scoped staff/manager
-- Full 12 reports + Excel/CSV/PDF export, expiry 90/30d alerts, reorder suggestions
+- Owner consolidated dashboard (Next.js + Tailwind), location-scoped staff/manager
+- Full 12 reports + Excel/CSV/PDF export via R2 signed URLs, expiry 90/30d alerts via Resend, reorder suggestions
 - Price-list staleness: warn >7d, Manager override
 
 **Acceptance:** 10 sent / 9 received → visible discrepancy; 2 locations offline day → sync no loss/dupe.
