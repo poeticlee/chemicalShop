@@ -10,6 +10,7 @@ Source: `product-bible-chemical-shop-software.md` V1.1
 - **Files:** Cloudflare R2 (S3-compatible) for item photos, receipt PDFs, CSV imports/exports, DB backups. Signed URLs, per-location prefixes.
 - **Payments:** Paystack for bank transfer / POS verification (initialize → verify webhook, split payment supported). Cash = manual count. No customer credit per PRD.
 - **Email:** Resend for low-stock, expiry 90/30d, negative-stock review, cash-up difference, transfer variance alerts.
+- **Docker:** yes — one-command setup. `docker compose up` runs Next.js app + PostgreSQL 16 + migrations. Same setup for your laptop and live server, fewer errors.
 - **Conventions:** `qty_base INTEGER` (ml/g/pc), money kobo `INTEGER`, cost per base `REAL`. All records UUIDv7 client-generated.
 - **Ledger:** insert-only `stock_movements`. One local txn per business op (sale + lines + payments + movements). Sync `POST /api/sync/push` idempotent `INSERT ON CONFLICT DO NOTHING`; `GET /api/sync/pull?since=` for master. Master LWW by `version + updated_at`.
 - **RBAC:** Owner > Manager > Store keeper > Sales > Accountant. Staff: no costs, no adjust. All sensitive actions → `audit_log`.
@@ -17,6 +18,7 @@ Source: `product-bible-chemical-shop-software.md` V1.1
 ## Phase 0 — Foundation (1 week)
 
 **Build:**
+- Docker files: `Dockerfile` for app + `docker-compose.yml` (app + Postgres + auto-migrate). `docker compose up` = everything running.
 - BetterAuth setup: 5 roles, location lock, PIN switch, idle lock, throttling; `locations`, `users`, `audit_log` (append-only)
 - Sync skeleton: Dexie outbox, push/pull, pending count badge, `device_id`
 - R2 buckets + prefixes (`photos/`, `receipts/`, `exports/`, `backups/`), Resend sender + templates, Paystack test keys + webhook route
