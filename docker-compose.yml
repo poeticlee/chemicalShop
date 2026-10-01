@@ -1,0 +1,18 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: shop
+      POSTGRES_PASSWORD: shop
+      POSTGRES_DB: shop
+    volumes: [pgdata:/var/lib/postgresql/data]
+    ports: ["5432:5432"]
+  app:
+    build: .
+    ports: ["3000:3000"]
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://shop:shop@db:5432/shop?schema=public
+    depends_on: [db]
+volumes:
+  pgdata: {}
