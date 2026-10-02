@@ -216,6 +216,25 @@ model AuditLog {
   createdAt  DateTime @default(now())
 }
 
+model Transfer {
+  id             String         @id @default(uuid())
+  fromLocationId String
+  toLocationId   String
+  status         String         @default("draft")
+  createdBy      String
+  createdAt      DateTime       @default(now())
+  lines          TransferLine[]
+}
+
+model TransferLine {
+  id           String   @id @default(uuid())
+  transferId   String
+  transfer     Transfer @relation(fields: [transferId], references: [id])
+  itemId       String
+  sentQty      Int      @default(0)
+  receivedQty  Int?
+}
+
 model Bom {
   id            String   @id @default(uuid())
   outputItemId  String
