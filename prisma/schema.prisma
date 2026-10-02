@@ -1,198 +1,215 @@
-generator client { provider = "prisma-client-js" }
-datasource db { provider = "postgresql"; url = env("DATABASE_URL") }
+generator client {
+  provider = "prisma-client-js"
+}
 
-model Location { id String @id @default(uuid()) name String address String? }
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Location {
+  id      String  @id @default(uuid())
+  name    String
+  address String?
+}
 
 model User {
-  id String @id @default(uuid())
-  email String @unique
-  name String?
-  role String @default("sales") // owner|manager|sales|store_keeper|accountant
-  locationIds String @default("[]")
-  pinHash String?
-  active Boolean @default(true)
+  id          String  @id @default(uuid())
+  email       String  @unique
+  name        String?
+  role        String  @default("sales")
+  locationIds String  @default("[]")
+  pinHash     String?
+  active      Boolean @default(true)
 }
 
 model Item {
-  id String @id @default(uuid())
-  code String @unique
-  name String
-  type String // liquid|solid|plastic|service
-  category String?
-  baseUnit String // ml|g|pc
-  currentCost Float @default(0)
-  reorderLevel Int @default(0)
-  safetyNote String?
-  hazardLabel String?
-  trackExpiry Boolean @default(false)
-  active Boolean @default(true)
-  version Int @default(1)
-  updatedAt DateTime @updatedAt
-  units ItemUnit[]
+  id           String     @id @default(uuid())
+  code         String     @unique
+  name         String
+  type         String
+  category     String?
+  baseUnit     String
+  currentCost  Float      @default(0)
+  reorderLevel Int        @default(0)
+  safetyNote   String?
+  hazardLabel  String?
+  trackExpiry  Boolean    @default(false)
+  active       Boolean    @default(true)
+  version      Int        @default(1)
+  updatedAt    DateTime   @updatedAt
+  units        ItemUnit[]
 }
 
 model ItemUnit {
-  id String @id @default(uuid())
-  itemId String
-  item Item @relation(fields: [itemId], references: [id])
-  unitName String
-  factorToBase Int
-  locationId String?
-  priceRetail Int @default(0)
-  priceWholesale Int @default(0)
-  isPurchaseUnit Boolean @default(false)
-  isSaleUnit Boolean @default(true)
+  id              String  @id @default(uuid())
+  itemId          String
+  item            Item    @relation(fields: [itemId], references: [id])
+  unitName        String
+  factorToBase    Int
+  locationId      String?
+  priceRetail     Int     @default(0)
+  priceWholesale  Int     @default(0)
+  isPurchaseUnit  Boolean @default(false)
+  isSaleUnit      Boolean @default(true)
+
   @@index([itemId])
 }
 
-model Supplier { id String @id @default(uuid()) name String phone String? }
+model Supplier {
+  id    String  @id @default(uuid())
+  name  String
+  phone String?
+}
+
 model SupplierPayment {
-  id String @id @default(uuid())
+  id         String   @id @default(uuid())
   supplierId String
   locationId String
   amountKobo Int
-  method String @default("cash")
-  userId String
-  createdAt DateTime @default(now())
+  method     String   @default("cash")
+  userId     String
+  createdAt  DateTime @default(now())
 }
 
 model Purchase {
-  id String @id @default(uuid())
+  id         String         @id @default(uuid())
   supplierId String
   locationId String
-  userId String
-  deviceId String
-  createdAt DateTime @default(now())
-  lines PurchaseLine[]
+  userId     String
+  deviceId   String
+  createdAt  DateTime       @default(now())
+  lines      PurchaseLine[]
 }
 
 model PurchaseLine {
-  id String @id @default(uuid())
-  purchaseId String
-  purchase Purchase @relation(fields: [purchaseId], references: [id])
-  itemId String
-  qtyBase Int
-  priceKobo Int
-  extrasShareKobo Int @default(0)
-  landedCostPerBase Float
-  batch String?
-  expiry DateTime?
+  id                 String   @id @default(uuid())
+  purchaseId         String
+  purchase           Purchase @relation(fields: [purchaseId], references: [id])
+  itemId             String
+  qtyBase            Int
+  priceKobo          Int
+  extrasShareKobo    Int      @default(0)
+  landedCostPerBase  Float
+  batch              String?
+  expiry             DateTime?
 }
 
 model StockMovement {
-  id String @id @default(uuid())
-  itemId String
-  locationId String
-  qtyBase Int
-  type String
+  id          String   @id @default(uuid())
+  itemId      String
+  locationId  String
+  qtyBase     Int
+  type        String
   referenceId String
-  userId String
-  deviceId String
-  createdAt DateTime @default(now())
+  userId      String
+  deviceId    String
+  createdAt   DateTime @default(now())
+
   @@index([itemId, locationId])
 }
 
 model Customer {
-  id String @id @default(uuid())
-  name String?
-  phone String?
-  locationId String?
-  totalSpentKobo Int @default(0)
-  lastSeen DateTime?
+  id              String    @id @default(uuid())
+  name            String?
+  phone           String?
+  locationId      String?
+  totalSpentKobo  Int       @default(0)
+  lastSeen        DateTime?
 }
 
 model Sale {
-  id String @id @default(uuid())
-  locationId String
-  userId String
-  customerId String?
-  status String @default("paid")
-  subtotalKobo Int @default(0)
-  discountKobo Int @default(0)
-  totalKobo Int @default(0)
-  deviceId String
-  createdAt DateTime @default(now())
-  lines SaleLine[]
-  payments Payment[]
+  id           String     @id @default(uuid())
+  locationId   String
+  userId       String
+  customerId   String?
+  status       String     @default("paid")
+  subtotalKobo Int        @default(0)
+  discountKobo Int        @default(0)
+  totalKobo    Int        @default(0)
+  deviceId     String
+  createdAt    DateTime   @default(now())
+  lines        SaleLine[]
+  payments     Payment[]
 }
 
 model SaleLine {
-  id String @id @default(uuid())
-  saleId String
-  sale Sale @relation(fields: [saleId], references: [id])
-  itemId String
-  qtyBase Int
-  unitName String
-  priceKobo Int
-  costKobo Float @default(0)
-  discountKobo Int @default(0)
+  id           String @id @default(uuid())
+  saleId       String
+  sale         Sale   @relation(fields: [saleId], references: [id])
+  itemId       String
+  qtyBase      Int
+  unitName     String
+  priceKobo    Int
+  costKobo     Float  @default(0)
+  discountKobo Int    @default(0)
 }
 
 model Payment {
-  id String @id @default(uuid())
-  saleId String
-  sale Sale @relation(fields: [saleId], references: [id])
-  method String
+  id         String @id @default(uuid())
+  saleId     String
+  sale       Sale   @relation(fields: [saleId], references: [id])
+  method     String
   amountKobo Int
-  reference String?
+  reference  String?
 }
 
 model StockCount {
-  id String @id @default(uuid())
+  id         String   @id @default(uuid())
   locationId String
-  startedBy String
+  startedBy  String
   approvedBy String?
-  status String @default("draft")
-  createdAt DateTime @default(now())
+  status     String   @default("draft")
+  createdAt  DateTime @default(now())
 }
 
 model CountLine {
-  id String @id @default(uuid())
-  countId String
-  itemId String
-  systemQty Int
+  id         String @id @default(uuid())
+  countId    String
+  itemId     String
+  systemQty  Int
   countedQty Int
 }
 
 model ReviewQueue {
-  id String @id @default(uuid())
-  type String
-  refId String
+  id         String   @id @default(uuid())
+  type       String
+  refId      String
   locationId String
   assignedTo String?
-  resolved Boolean @default(false)
-  createdAt DateTime @default(now())
+  resolved   Boolean  @default(false)
+  createdAt  DateTime @default(now())
 }
 
 model CashUp {
-  id String @id @default(uuid())
-  locationId String
-  userId String
-  day String
-  expectedKobo Int
-  countedKobo Int
+  id             String   @id @default(uuid())
+  locationId     String
+  userId         String
+  day            String
+  expectedKobo   Int
+  countedKobo    Int
   differenceKobo Int
-  createdAt DateTime @default(now())
+  createdAt      DateTime @default(now())
 }
 
 model Expense {
-  id String @id @default(uuid())
+  id         String   @id @default(uuid())
   locationId String
-  category String
+  category   String
   amountKobo Int
-  note String?
-  userId String
-  createdAt DateTime @default(now())
+  note       String?
+  userId     String
+  createdAt  DateTime @default(now())
 }
 
 model AuditLog {
-  id String @id @default(uuid())
-  userId String
-  action String
-  entity String
-  entityId String
+  id         String   @id @default(uuid())
+  userId     String
+  action     String
+  entity     String
+  entityId   String
   beforeJson String?
-  afterJson String?
+  afterJson  String?
   locationId String?
-  createdAt DateTime @default(now())
+  createdAt  DateTime @default(now())
 }
