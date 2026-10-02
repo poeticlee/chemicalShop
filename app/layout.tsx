@@ -1,7 +1,7 @@
 import "./globals.css";
 import Link from "next/link";
 export const metadata = { title: "Chemical Shop", description: "Offline-first inventory & POS" };
-const links = [["Home","/"],["POS","/pos"],["Items","/items"],["Receive","/receive"],["Stock","/stock"],["Locations","/locations"],["Dashboard","/dashboard"],["Login","/login"],["Sign up","/signup"]];
+const links = [["Home","/"],["POS","/pos"],["Items","/items"],["Combos","/combos"],["Receive","/receive"],["Stock","/stock"],["Locations","/locations"],["Dashboard","/dashboard"],["Login","/login"],["Sign up","/signup"]];
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (<html lang="en"><body className="bg-stone-100 text-stone-900">
     <nav className="sticky top-0 z-10 bg-stone-900 text-white">
