@@ -14,13 +14,14 @@ model Location {
 }
 
 model User {
-  id          String  @id @default(uuid())
-  email       String  @unique
-  name        String?
-  role        String  @default("sales")
-  locationIds String  @default("[]")
-  pinHash     String?
-  active      Boolean @default(true)
+  id           String  @id @default(uuid())
+  email        String  @unique
+  name         String?
+  role         String  @default("sales")
+  locationIds  String  @default("[]")
+  pinHash      String?
+  passwordHash String?
+  active       Boolean @default(true)
 }
 
 model Item {
