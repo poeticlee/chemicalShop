@@ -134,15 +134,17 @@ model Sale {
 }
 
 model SaleLine {
-  id           String @id @default(uuid())
-  saleId       String
-  sale         Sale   @relation(fields: [saleId], references: [id])
-  itemId       String
-  qtyBase      Int
-  unitName     String
-  priceKobo    Int
-  costKobo     Float  @default(0)
-  discountKobo Int    @default(0)
+  id              String  @id @default(uuid())
+  saleId          String
+  sale            Sale    @relation(fields: [saleId], references: [id])
+  itemId          String
+  qtyBase         Int
+  unitName        String
+  priceKobo       Int
+  costKobo        Float   @default(0)
+  discountKobo    Int     @default(0)
+  comboVersionId  String?
+  comboShareKobo  Int     @default(0)
 }
 
 model Payment {
@@ -212,4 +214,60 @@ model AuditLog {
   afterJson  String?
   locationId String?
   createdAt  DateTime @default(now())
+}
+
+model Bom {
+  id            String   @id @default(uuid())
+  outputItemId  String
+  bulkItemId    String
+  bulkQtyBase   Int
+  packagingJson String   @default("[]")
+  version       Int      @default(1)
+  createdAt     DateTime @default(now())
+}
+
+model Repack {
+  id           String        @id @default(uuid())
+  locationId   String
+  userId       String
+  sourceItemId String
+  qtyUsedBase  Int
+  createdAt    DateTime      @default(now())
+  outputs      RepackOutput[]
+}
+
+model RepackOutput {
+  id       String @id @default(uuid())
+  repackId String
+  repack   Repack @relation(fields: [repackId], references: [id])
+  itemId   String
+  qtyBase  Int
+}
+
+model Combo {
+  id        String         @id @default(uuid())
+  name      String
+  active    Boolean        @default(true)
+  createdAt DateTime       @default(now())
+  versions  ComboVersion[]
+}
+
+model ComboVersion {
+  id           String      @id @default(uuid())
+  comboId      String
+  combo        Combo       @relation(fields: [comboId], references: [id])
+  sizeLabel    String
+  priceKobo    Int
+  instructions String?
+  version      Int         @default(1)
+  createdAt    DateTime    @default(now())
+  lines        ComboLine[]
+}
+
+model ComboLine {
+  id        String       @id @default(uuid())
+  versionId String
+  version   ComboVersion @relation(fields: [versionId], references: [id])
+  itemId    String
+  qtyBase   Int
 }
