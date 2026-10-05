@@ -1,6 +1,9 @@
 import { prisma } from "@/lib/db";
-// GET /api/labels?code=TEX-001 — printable barcode-label payload (Code128 via frontend font/lib)
+import { requireUser } from "@/lib/require-auth";
+// GET /api/labels?code=TEX-001 — any logged-in staff
 export async function GET(req: Request) {
+  const { error } = await requireUser();
+  if (error) return error;
   const { searchParams } = new URL(req.url);
   const code = searchParams.get("code") ?? "";
   if (!code) return Response.json({ error: "code required" }, { status: 400 });

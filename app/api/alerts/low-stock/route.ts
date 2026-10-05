@@ -1,11 +1,15 @@
 import { prisma } from "@/lib/db";
 import { sendEmail } from "@/lib/email";
-// GET /api/alerts/low-stock?locationId=xxx&to=owner@shop.ng — lists low items + emails summary
+import { requireUser, canSeeLocation } from "@/lib/require-auth";
+// GET /api/alerts/low-stock?locationId=xxx&to=owner@shop.ng — manager/owner
 export async function GET(req: Request) {
+  const { user, error } = await requireUser(["owner", "manager", "accountant"]);
+  if (error) return error;
   const { searchParams } = new URL(req.url);
   const locationId = searchParams.get("locationId") ?? "";
   const to = searchParams.get("to") ?? "";
   if (!locationId) return Response.json({ error: "locationId required" }, { status: 400 });
+  if (!canSeeLocation(user!, locationId)) return Response.json({ error: "not your location" }, { status: 403 });
   const sums = await prisma.stockMovement.groupBy({ by: ["itemId"], where: { locationId }, _sum: { qtyBase: true } });
   const items = await prisma.item.findMany({ where: { id: { in: sums.map(s => s.itemId) } } });
   const byId = new Map(items.map(i => [i.id, i]));

@@ -1,13 +1,18 @@
 import { prisma } from "@/lib/db";
+import { requireUser, canSeeLocation } from "@/lib/require-auth";
 
-// POST { locationId, userId, deviceId, customerPhone?, lines: [{ itemId, qtyBase, unitName, priceKobo }], payments: [{ method, amountKobo }], discountKobo? }
+// POST { locationId, deviceId, customerPhone?, lines: [{ itemId, qtyBase, unitName, priceKobo }], payments: [{ method, amountKobo }], discountKobo? }
 // Rule: full payment only — sum(payments) must equal total. Single txn: sale + lines + payments + movements.
+// Auth: any logged-in staff, but only within their assigned location. userId comes from session, not body.
 export async function POST(req: Request) {
+  const { user, error } = await requireUser();
+  if (error) return error;
   const b = await req.json();
   const lines = b.lines ?? [];
   const payments = b.payments ?? [];
-  if (!b.locationId || !b.userId || lines.length === 0 || payments.length === 0)
-    return Response.json({ error: "locationId, userId, lines, payments required" }, { status: 400 });
+  if (!b.locationId || lines.length === 0 || payments.length === 0)
+    return Response.json({ error: "locationId, lines, payments required" }, { status: 400 });
+  if (!canSeeLocation(user!, b.locationId)) return Response.json({ error: "not your location" }, { status: 403 });
   const subtotal = lines.reduce((s: number, l: any) => s + (l.priceKobo || 0), 0);
   const discount = b.discountKobo ?? 0;
   const total = subtotal - discount;
@@ -22,12 +27,13 @@ export async function POST(req: Request) {
     });
     customerId = c.id;
   }
+  const uid = user!.id;
   await prisma.$transaction(async (tx) => {
-    await tx.sale.create({ data: { id: saleId, locationId: b.locationId, userId: b.userId, customerId, status: "paid", subtotalKobo: subtotal, discountKobo: discount, totalKobo: total, deviceId: b.deviceId ?? "web" } });
+    await tx.sale.create({ data: { id: saleId, locationId: b.locationId, userId: uid, customerId, status: "paid", subtotalKobo: subtotal, discountKobo: discount, totalKobo: total, deviceId: b.deviceId ?? "web" } });
     for (const l of lines) {
       const item = await tx.item.findUniqueOrThrow({ where: { id: l.itemId } });
       await tx.saleLine.create({ data: { saleId, itemId: l.itemId, qtyBase: l.qtyBase, unitName: l.unitName ?? item.baseUnit, priceKobo: l.priceKobo || 0, costKobo: (l.qtyBase || 0) * item.currentCost, discountKobo: 0 } });
-      await tx.stockMovement.create({ data: { itemId: l.itemId, locationId: b.locationId, qtyBase: -(l.qtyBase || 0), type: "sale", referenceId: saleId, userId: b.userId, deviceId: b.deviceId ?? "web" } });
+      await tx.stockMovement.create({ data: { itemId: l.itemId, locationId: b.locationId, qtyBase: -(l.qtyBase || 0), type: "sale", referenceId: saleId, userId: uid, deviceId: b.deviceId ?? "web" } });
       const neg = await tx.stockMovement.groupBy({ by: ["itemId"], where: { itemId: l.itemId, locationId: b.locationId }, _sum: { qtyBase: true } });
       if ((neg[0]?._sum.qtyBase ?? 0) < 0) {
         await tx.reviewQueue.create({ data: { type: "negative_stock", refId: saleId, locationId: b.locationId, assignedTo: "manager" } });

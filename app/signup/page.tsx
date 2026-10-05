@@ -1,15 +1,16 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { authClient } from "@/lib/auth-client";
 export default function Signup() {
   const r = useRouter(); const [name, setName] = useState(""); const [email, setEmail] = useState(""); const [pw, setPw] = useState(""); const [role, setRole] = useState("owner"); const [msg, setMsg] = useState("");
   const go = async () => {
     setMsg("Creating…");
-    const res = await fetch("/api/auth/signup", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ name, email, password: pw, role }) });
-    const d = await res.json().catch(()=>({}));
-    if (!res.ok) { setMsg(d.error ?? "failed"); return; }
-    localStorage.setItem("chem_user", JSON.stringify(d.user)); localStorage.setItem("chem_token", d.token);
-    r.push(d.user.role === "sales" ? "/pos" : "/dashboard");
+    const { data, error } = await authClient.signUp.email({ email, password: pw, name, role } as unknown as { email: string; password: string; name: string });
+    if (error) { setMsg(error.message ?? "failed"); return; }
+    const me = await fetch("/api/me").then(x=>x.json()).catch(()=>null);
+    const rr = me?.user?.role ?? role;
+    r.push(rr === "sales" ? "/pos" : "/dashboard");
   };
   return (
     <main className="max-w-md mx-auto p-6 space-y-3">
@@ -17,7 +18,7 @@ export default function Signup() {
       <p className="text-sm text-stone-500">First account should be Owner/Admin. Then create Staff per location.</p>
       <input value={name} onChange={e=>setName(e.target.value)} placeholder="Full name" className="w-full px-4 py-3 rounded-xl border-2 border-stone-200" />
       <input value={email} onChange={e=>setEmail(e.target.value)} placeholder="Email" className="w-full px-4 py-3 rounded-xl border-2 border-stone-200" />
-      <input value={pw} onChange={e=>setPw(e.target.value)} type="password" placeholder="Password" className="w-full px-4 py-3 rounded-xl border-2 border-stone-200" />
+      <input value={pw} onChange={e=>setPw(e.target.value)} type="password" placeholder="Password (min 8)" className="w-full px-4 py-3 rounded-xl border-2 border-stone-200" />
       <select value={role} onChange={e=>setRole(e.target.value)} className="w-full px-4 py-3 rounded-xl border-2 border-stone-200">
         <option value="owner">Admin / Owner — all locations, stock + all sales</option>
         <option value="manager">Manager — one location, approve + cash-up</option>

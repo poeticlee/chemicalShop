@@ -1,6 +1,9 @@
 import { prisma } from "@/lib/db";
-// Combos CRUD (minimal): POST { name, versions: [{ sizeLabel, priceKobo, instructions?, lines: [{ itemId, qtyBase }] }] }
+import { requireUser } from "@/lib/require-auth";
+// Combos CRUD (minimal): POST { name, versions: [...] } — owner/manager only
 export async function GET() {
+  const { error } = await requireUser();
+  if (error) return error;
   const combos = await prisma.combo.findMany({ include: { versions: { include: { lines: true } } }, take: 50 });
   // attach live availability + cost using current costs
   const items = await prisma.item.findMany();
@@ -12,6 +15,8 @@ export async function GET() {
   return Response.json({ combos: out });
 }
 export async function POST(req: Request) {
+  const { error } = await requireUser(["owner", "manager"]);
+  if (error) return error;
   const b = await req.json();
   if (!b.name || !b.versions?.length) return Response.json({ error: "name, versions required" }, { status: 400 });
   const c = await prisma.combo.create({ data: { name: b.name } });

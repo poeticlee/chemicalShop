@@ -1,15 +1,16 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { authClient } from "@/lib/auth-client";
 export default function Login() {
   const r = useRouter(); const [email, setEmail] = useState(""); const [pw, setPw] = useState(""); const [msg, setMsg] = useState("");
   const go = async () => {
     setMsg("Logging in…");
-    const res = await fetch("/api/auth/login", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ email, password: pw }) });
-    const d = await res.json().catch(()=>({}));
-    if (!res.ok) { setMsg(d.error ?? "failed"); return; }
-    localStorage.setItem("chem_user", JSON.stringify(d.user)); localStorage.setItem("chem_token", d.token);
-    r.push(d.redirect);
+    const { error } = await authClient.signIn.email({ email, password: pw });
+    if (error) { setMsg(error.message ?? "invalid login"); return; }
+    const me = await fetch("/api/me").then(x=>x.json()).catch(()=>null);
+    const role = me?.user?.role;
+    r.push(role === "sales" ? "/pos" : "/dashboard");
   };
   return (
     <main className="max-w-md mx-auto p-6 space-y-3">

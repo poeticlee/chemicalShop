@@ -1,9 +1,13 @@
 import { prisma } from "@/lib/db";
-// GET /api/reports/summary?locationId=xxx — sales by pay method, top items, stock valuation, cash-up
+import { requireUser, canSeeLocation } from "@/lib/require-auth";
+// GET /api/reports/summary?locationId=xxx — manager/owner/accountant, location-scoped
 export async function GET(req: Request) {
+  const { user, error } = await requireUser(["owner", "manager", "accountant"]);
+  if (error) return error;
   const { searchParams } = new URL(req.url);
   const locationId = searchParams.get("locationId") ?? "";
   if (!locationId) return Response.json({ error: "locationId required" }, { status: 400 });
+  if (!canSeeLocation(user!, locationId)) return Response.json({ error: "not your location" }, { status: 403 });
   const [sales, payAgg, movAgg, items, cashups, exps] = await Promise.all([
     prisma.sale.aggregate({ _sum: { totalKobo: true }, _count: true, where: { locationId, status: "paid" } }),
     prisma.payment.groupBy({ by: ["method"], _sum: { amountKobo: true }, where: { sale: { locationId } } }),
