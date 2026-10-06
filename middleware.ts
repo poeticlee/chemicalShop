@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 const PROTECTED = ["/pos", "/items", "/combos", "/receive", "/stock", "/locations", "/dashboard"];
-const ADMIN_PAGES = ["/items", "/receive", "/combos", "/locations", "/dashboard"];
+const ADMIN_PAGES = ["/items", "/receive", "/combos", "/locations", "/dashboard", "/users"];
 
 export async function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname;
@@ -29,4 +29,4 @@ export async function middleware(req: NextRequest) {
   return NextResponse.next();
 }
 
-export const config = { matcher: ["/pos/:path*", "/items/:path*", "/combos/:path*", "/receive/:path*", "/stock/:path*", "/locations/:path*", "/dashboard/:path*"] };
+export const config = { matcher: ["/pos/:path*", "/items/:path*", "/combos/:path*", "/receive/:path*", "/stock/:path*", "/locations/:path*", "/dashboard/:path*", "/users/:path*"] };

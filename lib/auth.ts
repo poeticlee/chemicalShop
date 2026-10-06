@@ -12,4 +12,18 @@ export const auth = betterAuth({
       locationIds: { type: "string", defaultValue: "[]", required: false },
     },
   },
+  databaseHooks: {
+    user: {
+      create: {
+        // Bootstrap safety: the very first account becomes owner.
+        // Every later signup is forced to sales — only an owner can promote via /api/users.
+        async before(user) {
+          const count = await prisma.user.count();
+          if (count === 0) return { data: { ...user, role: "owner" } };
+          if (user.role === "owner" || user.role === "manager") return { data: { ...user, role: "sales" } };
+          return { data: user };
+        },
+      },
+    },
+  },
 });
