@@ -1,0 +1,15 @@
+# Netlify deploy for the Next.js app (App Router + Prisma + BetterAuth).
+# Connect this GitHub repo in Netlify and set the env vars below — pushes to main auto-redeploy.
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# Required env vars in Netlify dashboard → Site settings → Environment variables:
+#   DATABASE_URL        public Postgres (e.g. Neon). localhost will NOT connect from Netlify.
+#   BETTER_AUTH_SECRET  32+ char random secret (different from local .env)
+#   BETTER_AUTH_URL     https://<your-site>.netlify.app
+# Optional: PAYSTACK_SECRET_KEY, RESEND_API_KEY, R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET
+# After first deploy, seed demo data once: ALLOW_SEED=1, POST /api/seed, then remove the var.
