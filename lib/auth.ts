@@ -3,6 +3,8 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "./db";
 
 export const auth = betterAuth({
+  baseURL: process.env.BETTER_AUTH_URL,
+  trustedOrigins: (process.env.TRUSTED_ORIGINS ?? "*.netlify.app").split(",").map(s => s.trim()).filter(Boolean),
   database: prismaAdapter(prisma, { provider: "postgresql" }),
   emailAndPassword: { enabled: true, requireEmailVerification: false, minPasswordLength: 8 },
   session: { expiresIn: 60 * 60 * 12, updateAge: 60 * 60 },
