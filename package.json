@@ -10,6 +10,8 @@
     "db:generate": "prisma generate"
   },
   "dependencies": {
+    "@neon/config": "^1.8.6",
+    "@neon/env": "^1.5.3",
     "@netlify/database": "^2.0.1",
     "@prisma/client": "^5.18.0",
     "better-auth": "^1.1.0",
