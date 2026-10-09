@@ -5,3 +5,6 @@ node_modules
 design-system-preview.html
 tsconfig.tsbuildinfo
 next-env.d.ts
+
+# Local Netlify folder
+.netlify
