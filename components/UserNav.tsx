@@ -37,7 +37,10 @@ export default function UserNav() {
   return (
     <nav className="sticky top-0 z-10 bg-stone-900 text-white">
       <div className="max-w-6xl mx-auto px-4 py-2 flex items-center gap-1 overflow-x-auto">
-        <span className="font-extrabold mr-1 whitespace-nowrap">Chemical Shop</span>
+        <Link href="/" className="flex items-center gap-2 mr-1 whitespace-nowrap">
+          <img src="/logo.png" alt="Spikenish Chemicals" className="h-9 w-auto rounded-md bg-white px-1" />
+          <span className="font-extrabold hidden sm:inline">Spikenish</span>
+        </Link>
         {links.map(l => (
           <Link key={l.h} href={l.h} className={`px-3 py-2 rounded-lg text-sm font-semibold whitespace-nowrap ${path === l.h ? "bg-stone-700" : "hover:bg-stone-700"}`}>{l.t}</Link>
         ))}
